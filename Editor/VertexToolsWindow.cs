@@ -59,7 +59,7 @@ public class VertexTool : EditorWindow
         }
         if (gpu_colours == null)
         {
-            gpu_colours = new ComputeBuffer((int)ushort.MaxValue, Marshal.SizeOf(typeof(Vector3)));
+            gpu_colours = new ComputeBuffer((int)ushort.MaxValue, Marshal.SizeOf(typeof(Color)));
         }
         if (gpu_flags == null)
         {
@@ -141,7 +141,7 @@ public class VertexTool : EditorWindow
         pointMaterial.SetBuffer("points", gpu_vertices);
         pointMaterial.SetBuffer("normals", gpu_normals);
         pointMaterial.SetBuffer("colours", gpu_colours);
-        //pointMaterial.SetBuffer("flags", gpu_flags);
+        //pointMaterial.SetBuffer("flags", gpu_flags); //must use SetRandomWriteTarget instead.
         Graphics.SetRandomWriteTarget(1, gpu_flags, true);
 
         pointMaterial.SetMatrix("ObjectToWorld", transform);
@@ -170,29 +170,28 @@ public class VertexTool : EditorWindow
 
         Handles.EndGUI();
 
-        if(Event.current.isKey && Event.current.keyCode == KeyCode.LeftControl) // our left mouse button.
-        {
-            switch (Event.current.type) 
-            {
-                case EventType.KeyDown:
-                    painting = true;
-                    break;
-                case EventType.KeyUp:
-                    painting = false;
-                    break;
-            }
-        }
+        int controlid = GUIUtility.GetControlID(FocusType.Passive);
 
-        if (painting)   
+        if (Event.current.button == 0)
         {
-            gpu_flags.GetData(cpu_flags);
-
-            for (int i = 0; i < mesh.vertexCount; i++)
+            switch (Event.current.type)
             {
-                if (((Flags)cpu_flags[i] & Flags.Selected) > 0)
-                {
-                    selected.Add(i);
-                }
+                case EventType.MouseDown:
+                case EventType.MouseDrag:
+
+                    gpu_flags.GetData(cpu_flags);
+                    for (int i = 0; i < mesh.vertexCount; i++)
+                    {
+                        if (((Flags)cpu_flags[i] & Flags.Selected) > 0)
+                        {
+                            selected.Add(i);
+                        }
+                    }
+
+                    GUIUtility.hotControl = controlid;
+                    Event.current.Use();
+
+                    break;
             }
         }
 
